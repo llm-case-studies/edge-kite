@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
 
     // Initialize logging
     let level = if args.verbose { Level::DEBUG } else { Level::INFO };
-    let subscriber = FmtSubscriber::builder()
+    FmtSubscriber::builder()
         .with_max_level(level)
         .with_target(false)
         .compact()

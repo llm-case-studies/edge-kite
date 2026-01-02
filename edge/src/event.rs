@@ -200,16 +200,19 @@ impl IncomingEvent {
 }
 
 /// Validate event category
+#[allow(dead_code)]
 pub fn validate_category(category: &str) -> bool {
     matches!(category, "web" | "iot" | "app" | "ops" | "security")
 }
 
 /// Validate source type
+#[allow(dead_code)]
 pub fn validate_source_type(source_type: &str) -> bool {
     matches!(source_type, "browser" | "edge_device" | "server" | "mobile")
 }
 
 /// Validate severity
+#[allow(dead_code)]
 pub fn validate_severity(severity: &str) -> bool {
     matches!(severity, "debug" | "info" | "warn" | "error" | "critical")
 }

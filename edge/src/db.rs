@@ -1,6 +1,6 @@
 //! Database operations for EdgeKite
 
-use rusqlite::{params, Connection, OptionalExtension};
+use rusqlite::{params, Connection};
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 

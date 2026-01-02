@@ -2,7 +2,9 @@
 
 use thiserror::Error;
 
+/// Application error types
 #[derive(Error, Debug)]
+#[allow(dead_code)]
 pub enum Error {
     #[error("Configuration error: {0}")]
     Config(#[from] config::ConfigError),

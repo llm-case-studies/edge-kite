@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 
 use crate::error::Result;
 
+/// Main configuration struct
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
     /// Data directory for SQLite and media
@@ -19,11 +20,13 @@ pub struct Config {
     #[serde(default)]
     pub sync: SyncConfig,
 
-    /// Retention configuration
+    /// Retention configuration (used by cleanup worker)
     #[serde(default)]
+    #[allow(dead_code)]
     pub retention: RetentionConfig,
 }
 
+/// HTTP server configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct ServerConfig {
     /// Listen address
@@ -34,7 +37,8 @@ pub struct ServerConfig {
     #[serde(default = "default_true")]
     pub cors_enabled: bool,
 
-    /// Path to static UI files
+    /// Path to static UI files (used when SPA is added)
+    #[allow(dead_code)]
     pub ui_path: Option<PathBuf>,
 }
 
@@ -69,6 +73,8 @@ pub struct SyncConfig {
     pub retry_base_delay_ms: u64,
 }
 
+/// Retention configuration (for cleanup worker)
+#[allow(dead_code)]
 #[derive(Debug, Clone, Deserialize)]
 pub struct RetentionConfig {
     /// Days to retain events locally
