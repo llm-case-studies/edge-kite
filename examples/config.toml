@@ -1,0 +1,45 @@
+# EdgeKite Example Configuration
+# Copy this file and customize for your deployment
+
+# Data directory for SQLite database and media
+data_dir = "./data"
+
+[server]
+# Listen address (0.0.0.0 for all interfaces)
+listen = "0.0.0.0:8080"
+
+# Enable CORS (useful for web tracker)
+cors_enabled = true
+
+# Path to static UI files (optional)
+# ui_path = "./ui/dist"
+
+[sync]
+# Enable sync to hub (set to true and configure hub_url)
+enabled = false
+
+# Hub URL
+hub_url = "https://hub.edge-kite.com/api"
+
+# API key for authentication
+api_key = "ek_your_api_key_here"
+
+# Number of events per batch
+batch_size = 100
+
+# Sync interval in seconds
+interval_seconds = 30
+
+# Retry configuration
+retry_max_attempts = 10
+retry_base_delay_ms = 1000
+
+[retention]
+# Days to retain events locally
+events_days = 30
+
+# Days to retain media locally
+media_days = 7
+
+# Run cleanup at this hour (0-23, local time)
+cleanup_hour = 3

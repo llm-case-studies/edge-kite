@@ -1,0 +1,50 @@
+# Rust
+/edge/target/
+**/*.rs.bk
+Cargo.lock
+
+# Data
+/data/
+*.db
+*.db-wal
+*.db-shm
+
+# Media
+/media/
+
+# Node (for UI)
+node_modules/
+dist/
+.cache/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+*.env
+
+# Build artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Test coverage
+*.gcov
+*.gcda
+*.gcno
+coverage/
