@@ -129,12 +129,13 @@ All events share a unified envelope based on CloudEvents principles:
 │                                                             │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │                    HTTP Server                       │   │
-│  │  POST /events      - Ingest single event            │   │
-│  │  POST /events/batch - Ingest batch                  │   │
-│  │  GET /api/timeline  - Query events                  │   │
-│  │  GET /api/stats     - Get counts/top-N              │   │
-│  │  GET /api/health    - Health check                  │   │
-│  │  GET /*             - Serve SPA dashboard           │   │
+│  │  POST /api/events       - Ingest single event       │   │
+│  │  POST /api/events/batch - Ingest batch              │   │
+│  │  GET  /api/health       - Health check              │   │
+│  │  GET  /api/stats        - Get counts/pending sync   │   │
+│  │  GET  /api/resources    - CPU/RAM/DB usage          │   │
+│  │  GET  /api/timeline     - Query events (TODO)       │   │
+│  │  GET  /*                - Serve SPA dashboard       │   │
 │  └─────────────────────────────────────────────────────┘   │
 │                              │                              │
 │                              ▼                              │

@@ -73,14 +73,16 @@ EdgeKite is the **missing middle**: Umami-like dashboard experience with offline
 
 ## Project Status
 
-**Phase:** Early Development
+**Phase:** Alpha Development
 
 - [x] Architecture design (RFC-001)
 - [x] Multi-AI review and synthesis
-- [ ] Edge agent MVP (Tier 0: ingest + timeline)
-- [ ] Edge dashboard (Tier 1: counts, top-N, health)
+- [x] Edge agent MVP (Tier 0: ingest, stats, health, resources)
+- [x] JS browser tracker (sdk/js/tracker.js)
+- [ ] Edge dashboard UI (Tier 1: counts, top-N, timeline)
 - [ ] Hub integration
-- [ ] SDKs (JS tracker, Python agent)
+- [ ] Landing page (edge-kite.com)
+- [ ] Python SDK
 
 ## Documentation
 
@@ -91,16 +93,66 @@ EdgeKite is the **missing middle**: Umami-like dashboard experience with offline
 
 ## Quick Start
 
-*Coming soon*
+### Build from Source
 
 ```bash
-# Edge agent (Rust)
-cargo install edge-kite
-edge-kite --config /path/to/config.toml
+# Clone the repo
+git clone https://github.com/llm-case-studies/edge-kite.git
+cd edge-kite/edge
 
-# Or via Docker
-docker run -v ./data:/data ghcr.io/edge-kite/edge-kite:latest
+# Build (requires Rust 1.70+)
+cargo build --release
+
+# Run with default config
+./target/release/edge-kite
+
+# Or with custom config
+./target/release/edge-kite --config /path/to/config.toml --data-dir ./data
 ```
+
+### Configuration
+
+Create a `config.toml` (see `examples/config.toml`):
+
+```toml
+[server]
+listen = "0.0.0.0:8080"
+cors_enabled = true
+
+[sync]
+enabled = false  # Set true to sync to hub
+# hub_url = "https://hub.example.com"
+# api_key = "ek_..."
+```
+
+### Send Events
+
+```bash
+# Single event
+curl -X POST http://localhost:8080/api/events \
+  -H "Content-Type: application/json" \
+  -d '{
+    "source": {"type": "browser", "id": "test-session"},
+    "event": {"category": "web", "type": "page_view", "data": {"path": "/"}}
+  }'
+
+# Check health
+curl http://localhost:8080/api/health
+
+# Get stats
+curl http://localhost:8080/api/stats
+
+# Get resource usage
+curl http://localhost:8080/api/resources
+```
+
+### Browser Tracker
+
+```html
+<script src="/tracker.js" data-endpoint="/api/events"></script>
+```
+
+See `sdk/js/tracker.js` for the lightweight (~5KB) browser tracker.
 
 ## License
 

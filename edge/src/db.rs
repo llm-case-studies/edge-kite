@@ -351,3 +351,117 @@ impl EventRow {
 }
 
 use chrono::Utc;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tempfile::tempdir;
+
+    fn make_test_event(event_type: &str) -> Event {
+        Event {
+            event_id: uuid::Uuid::new_v4().to_string(),
+            observed_at: Utc::now(),
+            received_at: Utc::now(),
+            source: crate::event::Source {
+                source_type: "browser".to_string(),
+                id: "test-session".to_string(),
+                version: Some("1.0".to_string()),
+                metadata: None,
+            },
+            event: crate::event::EventDetails {
+                category: "web".to_string(),
+                event_type: event_type.to_string(),
+                severity: "info".to_string(),
+                schema_version: None,
+                data: serde_json::json!({"path": "/test"}),
+            },
+            correlation: None,
+            attachments: None,
+            privacy: None,
+            sync: None,
+        }
+    }
+
+    #[test]
+    fn test_open_and_migrate() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        db.migrate().unwrap();
+        assert_eq!(db.event_count().unwrap(), 0);
+    }
+
+    #[test]
+    fn test_insert_and_count() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        db.migrate().unwrap();
+
+        let event = make_test_event("page_view");
+        db.insert_event(&event).unwrap();
+
+        assert_eq!(db.event_count().unwrap(), 1);
+        assert_eq!(db.pending_sync_count().unwrap(), 1);
+    }
+
+    #[test]
+    fn test_insert_batch() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        db.migrate().unwrap();
+
+        let events: Vec<Event> = (0..10)
+            .map(|i| make_test_event(&format!("event_{}", i)))
+            .collect();
+
+        let count = db.insert_events(&events).unwrap();
+        assert_eq!(count, 10);
+        assert_eq!(db.event_count().unwrap(), 10);
+    }
+
+    #[test]
+    fn test_get_unsynced_and_mark_synced() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        db.migrate().unwrap();
+
+        // Insert events
+        let events: Vec<Event> = (0..5)
+            .map(|i| make_test_event(&format!("event_{}", i)))
+            .collect();
+        db.insert_events(&events).unwrap();
+
+        // Get unsynced
+        let unsynced = db.get_unsynced_events(10).unwrap();
+        assert_eq!(unsynced.len(), 5);
+
+        // Mark first 3 as synced
+        let ids: Vec<String> = unsynced.iter().take(3).map(|e| e.event_id.clone()).collect();
+        db.mark_synced(&ids).unwrap();
+
+        // Check counts
+        assert_eq!(db.event_count().unwrap(), 5);
+        assert_eq!(db.pending_sync_count().unwrap(), 2);
+
+        // Get unsynced again
+        let unsynced2 = db.get_unsynced_events(10).unwrap();
+        assert_eq!(unsynced2.len(), 2);
+    }
+
+    #[test]
+    fn test_idempotent_insert() {
+        let dir = tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db = Database::open(&db_path).unwrap();
+        db.migrate().unwrap();
+
+        let event = make_test_event("page_view");
+        db.insert_event(&event).unwrap();
+        db.insert_event(&event).unwrap(); // Same event_id
+
+        assert_eq!(db.event_count().unwrap(), 1); // Should still be 1
+    }
+}
