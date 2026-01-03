@@ -69,7 +69,8 @@ async fn main() -> Result<()> {
     info!("Listening on: {}", config.server.listen);
 
     // Initialize database
-    let db = db::Database::open(&config.data_dir.join("events.db"))?;
+    let db_path = config.data_dir.join("events.db");
+    let db = db::Database::open(&db_path)?;
     db.migrate()?;
 
     // Start sync worker (if enabled)
@@ -82,7 +83,7 @@ async fn main() -> Result<()> {
     };
 
     // Start HTTP server
-    server::run(config.server, db).await?;
+    server::run(config.server, db, db_path).await?;
 
     // Cleanup
     if let Some(handle) = sync_handle {

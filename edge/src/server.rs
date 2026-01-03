@@ -8,7 +8,9 @@ use axum::{
     Router,
 };
 use serde::Serialize;
+use std::path::PathBuf;
 use std::sync::Arc;
+use sysinfo::System;
 use tower_http::cors::{Any, CorsLayer};
 use tracing::info;
 
@@ -21,20 +23,22 @@ use crate::event::{Event, IncomingEvent};
 #[derive(Clone)]
 pub struct AppState {
     db: Database,
+    db_path: PathBuf,
 }
 
 /// Run the HTTP server
-pub async fn run(config: ServerConfig, db: Database) -> Result<()> {
-    let state = Arc::new(AppState { db });
+pub async fn run(config: ServerConfig, db: Database, db_path: PathBuf) -> Result<()> {
+    let state = Arc::new(AppState { db, db_path });
 
     let mut app = Router::new()
         // Event ingestion
-        .route("/events", post(ingest_event))
-        .route("/events/batch", post(ingest_batch))
+        .route("/api/events", post(ingest_event))
+        .route("/api/events/batch", post(ingest_batch))
         // API endpoints
         .route("/api/health", get(health))
         .route("/api/stats", get(stats))
-        // TODO: Add timeline, query endpoints
+        .route("/api/resources", get(resources))
+        // TODO: Add timeline, query, SSE endpoints
         .with_state(state);
 
     // Add CORS if enabled
@@ -135,7 +139,39 @@ async fn stats(State(state): State<Arc<AppState>>) -> impl IntoResponse {
     Json(StatsResponse {
         total_events: event_count,
         pending_sync,
-        // TODO: Add more stats
+    })
+}
+
+/// Resource monitoring endpoint
+async fn resources(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    // Get system info
+    let mut sys = System::new();
+    sys.refresh_cpu_usage();
+    sys.refresh_memory();
+
+    // Calculate CPU usage (average across all cores)
+    let cpu_percent = sys.cpus().iter().map(|c| c.cpu_usage()).sum::<f32>()
+        / sys.cpus().len().max(1) as f32;
+
+    // Get memory usage for this process
+    let ram_bytes = sysinfo::get_current_pid()
+        .ok()
+        .and_then(|pid| {
+            sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]));
+            sys.process(pid).map(|p| p.memory())
+        })
+        .unwrap_or(0);
+
+    // Get database file size
+    let db_size_bytes = std::fs::metadata(&state.db_path)
+        .map(|m| m.len())
+        .unwrap_or(0);
+
+    Json(ResourcesResponse {
+        cpu_percent: (cpu_percent * 10.0).round() / 10.0, // 1 decimal place
+        ram_mb: (ram_bytes as f64 / 1024.0 / 1024.0 * 10.0).round() / 10.0,
+        db_size_mb: (db_size_bytes as f64 / 1024.0 / 1024.0 * 100.0).round() / 100.0,
+        sync_status: "connected".to_string(), // TODO: get actual sync status
     })
 }
 
@@ -165,4 +201,12 @@ struct HealthResponse {
 struct StatsResponse {
     total_events: i64,
     pending_sync: i64,
+}
+
+#[derive(Serialize)]
+struct ResourcesResponse {
+    cpu_percent: f32,
+    ram_mb: f64,
+    db_size_mb: f64,
+    sync_status: String,
 }
