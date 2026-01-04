@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EdgeKite - Lightweight Edge Analytics</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Bitter:wght@400;600&family=Roboto+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+      /* Theme Definitions */
+      :root {
+        /* Default Edge Theme (Slate/Blue) */
+        --app-base: #0f172a;
+        --app-dark: #020617;
+        --app-card: #1e293b;
+        --app-border: #334155;
+        --app-text: #f8fafc;
+        --app-text-muted: #94a3b8;
+        --app-primary: #3b82f6;
+        --app-primary-hover: #2563eb;
+        --app-accent-glow: rgba(59, 130, 246, 0.5);
+        --font-heading: 'Inter', sans-serif;
+      }
+
+      .theme-ranch {
+        /* Ranch Theme (Warm Brown/Green/Earth) */
+        --app-base: #292524; /* Stone 800 */
+        --app-dark: #1c1917; /* Stone 900 */
+        --app-card: #44403c; /* Stone 700 */
+        --app-border: #57534e; /* Stone 600 */
+        --app-text: #f5f5f4; /* Stone 100 */
+        --app-text-muted: #d6d3d1; /* Stone 300 */
+        --app-primary: #65a30d; /* Lime 600 */
+        --app-primary-hover: #4d7c0f; /* Lime 700 */
+        --app-accent-glow: rgba(101, 163, 13, 0.4);
+        --font-heading: 'Bitter', serif; /* Rustic serif */
+      }
+
+      .theme-legal {
+        /* Legal Theme (Dark Mahogany/Gold/Navy) */
+        --app-base: #18110e; /* Deep espresso */
+        --app-dark: #0f0a09; /* Near black */
+        --app-card: #2e201c; /* Dark wood */
+        --app-border: #4a342e; /* Wood grain */
+        --app-text: #f3e5d0; /* Parchment */
+        --app-text-muted: #a89f91; /* Aged paper */
+        --app-primary: #b45309; /* Amber 700/Gold/Leather */
+        --app-primary-hover: #92400e; /* Amber 800 */
+        --app-accent-glow: rgba(180, 83, 9, 0.3);
+        --font-heading: 'Playfair Display', serif; /* Elegant serif */
+      }
+
+      .theme-corporate {
+        /* Fun-EE Theme (Beige/Grey/Bland Enterprise) */
+        --app-base: #f5f5f5; /* Neutral Light Grey */
+        --app-dark: #e5e5e5; /* Slightly darker */
+        --app-card: #ffffff; /* Pure White Cards */
+        --app-border: #d4d4d4; /* Neutral Border */
+        --app-text: #333333; /* Dark Grey Text */
+        --app-text-muted: #666666; /* Medium Grey */
+        --app-primary: #0f766e; /* Teal 700 (Serious Business Color) */
+        --app-primary-hover: #115e59;
+        --app-accent-glow: rgba(15, 118, 110, 0.1);
+        --font-heading: 'Roboto Mono', monospace; /* Legacy Terminal feel */
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background-color: var(--app-base);
+        color: var(--app-text);
+        transition: background-color 0.3s ease, color 0.3s ease;
+      }
+      
+      /* Smooth scrolling for anchor links */
+      html {
+        scroll-behavior: smooth;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--app-base); 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--app-border); 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--app-text-muted); 
+      }
+      
+      .font-heading {
+        font-family: var(--font-heading);
+      }
+      
+      /* 3D Flip Card Utilities */
+      .perspective-1000 {
+        perspective: 1000px;
+      }
+      .transform-style-3d {
+        transform-style: preserve-3d;
+      }
+      .backface-hidden {
+        backface-visibility: hidden;
+      }
+      .rotate-y-180 {
+        transform: rotateY(180deg);
+      }
+    </style>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              app: {
+                base: 'var(--app-base)',
+                dark: 'var(--app-dark)',
+                card: 'var(--app-card)',
+                border: 'var(--app-border)',
+                text: 'var(--app-text)',
+                muted: 'var(--app-text-muted)',
+                primary: 'var(--app-primary)',
+                'primary-hover': 'var(--app-primary-hover)',
+              }
+            },
+            fontFamily: {
+              heading: ['var(--font-heading)', 'sans-serif'],
+            },
+            animation: {
+              'fade-in': 'fadeIn 0.5s ease-out',
+              'slide-in': 'slideIn 0.3s ease-out',
+            },
+            keyframes: {
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideIn: {
+                '0%': { transform: 'translateY(-10px)', opacity: '0' },
+                '100%': { transform: 'translateY(0)', opacity: '1' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.34.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

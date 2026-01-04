@@ -1,0 +1,60 @@
+What is the primary function of EdgeKite?,"It is a unified, lightweight, offline-first event collection platform for resource-constrained edge devices."
+EdgeKite is designed to fill the 'missing middle' between two types of existing analytics solutions. What are they?,Heavy enterprise IoT stacks (like AWS Greengrass) and overly simple solutions like raw logs or CSV files.
+What is the target RAM footprint for the EdgeKite edge agent?,Less than 100MB.
+"What technology is used for the EdgeKite agent's local, durable storage?",SQLite with Write-Ahead Logging (WAL) mode.
+The core debate in RFC-001 is whether web analytics and IoT/edge events are fundamentally different or if '_____ are _____'.,Events are Events
+What was the key resolution to the 'events are events' debate in the AI synthesis?,"Unify the event envelope and ingestion mechanics, but keep domain-specific views and dashboards."
+"In the EdgeKite architecture, what is meant by 'Operational Truth'?","The raw, fast, and time-bounded data available on the edge agent."
+"In the EdgeKite architecture, what is meant by 'Analytical Truth'?","The corrected, enriched, and complete data available on the central hub."
+The synchronization mechanism used by EdgeKite to send data from the edge agent to the hub is called the _____ pattern.,Outbox
+"What is the primary architectural style of the EdgeKite agent, often called the 'PocketBase pattern'?",A single binary deployment combining the application server and embedded database.
+Why does EdgeKite's event schema include both 'observed_at' and 'received_at' timestamps?,To handle clock drift on edge devices and accurately represent when an event occurred versus when it was ingested.
+What is the recommended policy for handling media like images or video clips in EdgeKite events?,"Store media as references only (URI + hash), not as blobs within the SQLite database."
+"In the tiered analytics model, which component is responsible for complex tasks like sessionization, bot filtering, and geo-enrichment?",The Hub.
+What is the primary function of Tier 0 in the EdgeKite development plan?,"To act as a basic collector with a timeline view, establishing the core event ingestion and storage."
+Which tier of the EdgeKite architecture introduces lightweight local analytics like counts and Top-N lists on the edge device?,Tier 1.
+"Tasks like calculating sessions, visitors, and bounce rates are explicitly excluded from the edge agent and are handled only by which component?",The Hub (Tier 3 analytics).
+What is the primary technology used for building the EdgeKite edge agent?,Rust.
+For which specific use case was the 'On-My-Watch' scenario developed in RFC-001?,"Farm/ranch security, where a farmer views events from an NVR on a phone via local WiFi."
+"According to the strategic analysis, EdgeKite is not competing in the saturated web analytics market, but rather in the 'Lightweight _____' market.",Industrial/Field Observability
+"What is the recommended business model for EdgeKite, similar to Tailscale or Balena?","The Open Core model, with a free open-source edge node and a paid SaaS hub."
+Why is a direct-to-database architecture like Umami's vulnerable to a 'thundering herd' traffic spike?,"The surge in concurrent traffic can exhaust the database's connection pool, leading to data loss."
+The document analyzing self-hosted analytics contrasts OLTP databases like PostgreSQL with OLAP databases like _____ for analytics workloads.,ClickHouse
+The strategic analysis highlights a 'Missing Middle' between enterprise data pipelines (like RudderStack) and what other option for prosumers?,Hacked-together solutions like cron jobs and restart scripts for a self-hosted VPS.
+Why is the SQLite performance claim of '50k inserts/sec' nuanced and what does it validate about EdgeKite's design?,"It applies to batched statements within a single transaction, not individual transactions, which validates EdgeKite's batch-based approach."
+"In the tiered architecture, what is the role of the Hub?","To provide deep analytical truth through aggregation, enrichment, and long-term storage."
+What is a key principle of the EdgeKite architecture regarding connectivity?,"It is offline-first, providing full utility on a local network without hub connectivity."
+"Which event type category, suggested by AI feedback, includes events like 'firmware updated' or 'certificate rotated'?",Device Lifecycle Events.
+The proposed 'Edge-Hub' architecture for self-hosted analytics decouples _____ from storage.,ingestion
+"In the EdgeKite sync protocol, what is the initial state of the 'synced' flag for a new event?",It is set to 0 or false.
+What is the main advantage of using an asynchronous buffer or queue in the Edge-Hub architecture?,"It acts as a shock absorber during traffic spikes or backend outages, preventing data loss."
+How does the Edge-Hub architecture reduce the load on the backend database server?,"It batches many small write operations into a single, efficient bulk insert."
+What is one of the key weaknesses identified in the whitepaper draft regarding media handling?,Storing binary data in SQLite or managing files alongside it introduces significant complexity and risk.
+"In addition to 'observed_at' and 'received_at', what monotonic field is suggested for event ordering when clocks are unreliable?",source_seq (source sequence number).
+Which analytics tool is mentioned as being built with Elixir/Phoenix and using both PostgreSQL and ClickHouse?,Plausible.
+The 'On-My-Watch' use case requires a local collector that is lightweight and can survive what common issue on edge devices?,Power loss.
+"The AI feedback synthesis concluded that the architecture is sound and the market gap is real, summarizing the verdict as '_____'.",BUILD IT
+"For local analytics on the edge agent, queries are designed to be fast by being bounded in what way?","They are bounded in time (e.g., last 24 hours or 7 days)."
+What is the purpose of the 'Appliance Model' as a potential business strategy for EdgeKite?,To sell pre-flashed hardware to non-technical users for a plug-and-play experience.
+"The market analysis identifies that while the web analytics field is saturated, the market for lightweight _____ is wide open.",edge observability
+"What is the primary reason that tools like Umami, built on Node.js and Next.js, have a high baseline memory consumption on a VPS?","The runtime overhead of Node.js and the Next.js server processes, which can consume 350-500MB of RAM at idle."
+"In EdgeKite's tiered analytics, what does the '⚠️' symbol next to 'Approx uniques (HLL sketches)' on the Edge signify?","It signifies that the Edge only provides estimates, not exact counts."
+The technical analysis of self-hosting mentions the success of Stape.io as validation that users will pay for what?,"Infrastructure middleware that solves complexity and data quality issues, even if the core tool is free."
+What is the first step of the Outbox Pattern sync protocol used by EdgeKite?,Events are inserted into the local SQLite database with synced=0.
+"What kind of events are part of the 'Pipeline Integrity' category, which helps prevent silent failure?","Events like 'camera feed lost', 'ML inference latency spike', or 'sync stuck'."
+"The analysis of database technologies states that row-oriented databases like PostgreSQL are optimized for OLTP, whereas column-oriented databases like ClickHouse are optimized for _____.",OLAP (Online Analytical Processing)
+What critical risk must be managed regarding user expectations when implementing the Edge-Hub model?,"Users will expect numbers from the edge to match the hub 100%, which they won't, requiring clear labeling of the different views."
+What is a primary use case for EdgeKite in retail or branch monitoring?,A Raspberry Pi probe tracking footfall and syncing data to a central headquarters nightly.
+"The RFC for EdgeKite was co-authored by a human, Alex, and what other entity?",Claude (Opus 4.5).
+What is the license for the EdgeKite project?,MIT License.
+"According to the analysis, what is the 'killer app' feature of SQLite for edge deployments?","Its single-file simplicity, which makes backup, migration, and replacement trivial."
+The project status in the README indicates that the _____ is still to be determined (TBD).,Hub UI
+What is a key difference between LiteFS and EdgeKite's sync mechanism?,"LiteFS is for database replication (high availability), while EdgeKite's sync is for resumable upload of immutable events to a central hub."
+What type of user is the 'MSP License' business model targeting?,Managed Service Providers who manage IT for many small business clients.
+"In the comparison of existing tools, what is the primary focus of Frigate NVR?","It is an NVR (Network Video Recorder) with local AI object detection, focused on edge video events."
+The RFC identified that a key difference between web and edge events is the potential for edge events to include large media ____.,blobs
+The synthesis of AI feedback recommended a tiered approach where the Edge shows 'Operational Truth' and the Hub shows '_____ Truth'.,Analytical
+What is the primary function of a 'batch consumer' in the Edge-Hub architecture?,To pull a batch of events from the queue and send them as a single bulk payload to the backend API.
+Which project phase in the recommended next steps focuses on implementing the hub to receive batches and deduplicate events?,Phase 3: Hub Integration.
+What is the recommended approach for handling user agent (UA) parsing in the EdgeKite architecture?,Store the raw user agent string on the edge and perform parsing and normalization only on the hub.
+The RFC for the unified event architecture was created on what date?,2026-01-02.

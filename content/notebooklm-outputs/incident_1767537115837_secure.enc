@@ -1,0 +1,9 @@
+ENCRYPTED BUNDLE [EDGE]
+
+[14:20:11] TEMP_ALERT: Reefer_Container_9921
+[14:20:15] VAL: -4.2C (Threshold: -18C)
+[14:25:00] CREW_ACCESS: ID_8821 (Chief_Engineer)
+[14:25:30] MANUAL_OVERRIDE: Compressor_Shutdown
+[14:26:00] CARGO_ID: Pharma_Batch_X99 (Insulin)
+
+--HASH: 882910aa--

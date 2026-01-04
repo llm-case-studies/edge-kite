@@ -1,0 +1,5 @@
+{
+  "name": "EdgeKite Analytics",
+  "description": "Lightweight, offline-first analytics platform. Privacy-focused and edge-ready.",
+  "requestFramePermissions": []
+}
