@@ -148,10 +148,10 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, theme, setTheme, langua
              <div className="bg-gradient-to-br from-indigo-900 to-app-card rounded-2xl p-6 border border-app-border shadow-xl relative overflow-hidden group">
                 {/* ... Audio UI Code ... */}
                 <div className="absolute top-0 right-0 p-32 bg-purple-500/20 blur-[100px] rounded-full pointer-events-none"></div>
-                <audio 
-                  ref={audioRef} 
-                  src="/assets/edgekite_audio.mp3" 
-                  preload="metadata" 
+                <audio
+                  ref={audioRef}
+                  src="/assets/edgekite_audio.m4a"
+                  preload="metadata"
                   onEnded={() => setIsPlaying(false)}
                 />
                 <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
@@ -181,12 +181,13 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, theme, setTheme, langua
                    {getTranslation(language, 'doc_video_title')}
                 </h3>
                 <div className="aspect-video bg-black rounded-lg border border-app-border overflow-hidden relative group">
-                   <video 
-                     controls 
+                   <video
+                     controls
                      className="w-full h-full object-cover"
-                     poster="/assets/video_thumbnail.png"
+                     poster="/assets/edgekite_infographic.png"
                    >
                       <source src="/assets/edgekite_video.mp4" type="video/mp4" />
+                      Your browser does not support the video tag.
                    </video>
                 </div>
              </div>
