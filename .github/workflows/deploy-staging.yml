@@ -32,10 +32,179 @@ jobs:
 
   deploy:
     needs: build
-    uses: llm-case-studies/ionos-4c8g-production/.github/workflows/deploy-ionos-reusable.yml@main
-    with:
-      app_name: edge-kite
-      environment: staging
-      domain: staging.edge-kite.com
-      artifact_name: build
-    secrets: inherit
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: edge-kite
+      ENVIRONMENT: staging
+      DOMAIN: staging.edge-kite.com
+      ARTIFACT_NAME: build
+      ARTIFACT_SUBDIR: .
+      RSYNC_DELETE: "true"
+      ALLOW_MISSING_NGINX: "false"
+    steps:
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_NAME="$APP_NAME"
+          ENVIRONMENT="$ENVIRONMENT"
+          DOMAIN="$DOMAIN"
+
+          case "$ENVIRONMENT" in
+            staging) ;;
+            production) echo "ERROR: production deployments are legacy and not supported on 4c8g"; exit 1 ;;
+            *) echo "ERROR: environment must be staging"; exit 1 ;;
+          esac
+
+          if ! [[ "$APP_NAME" =~ ^[a-z0-9][a-z0-9-]*$ ]]; then
+            echo "ERROR: app_name must be lowercase letters, numbers, or hyphens"
+            exit 1
+          fi
+
+          if ! [[ "$DOMAIN" =~ ^[A-Za-z0-9.-]+$ ]]; then
+            echo "ERROR: domain has invalid characters"
+            exit 1
+          fi
+
+          if [[ "$ENVIRONMENT" == "staging" ]]; then
+            if [[ "$DOMAIN" != *"staging."* && "$DOMAIN" != *"-staging."* ]]; then
+              echo "ERROR: staging domain must include staging"
+              exit 1
+            fi
+          else
+            if [[ "$DOMAIN" == *"staging."* || "$DOMAIN" == *"-staging."* ]]; then
+              echo "ERROR: production domain must not include staging"
+              exit 1
+            fi
+          fi
+
+          DEPLOY_DIR="/home/proxyuser/www/${APP_NAME}-staging"
+
+          echo "DEPLOY_DIR=$DEPLOY_DIR" >> "$GITHUB_ENV"
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ./deploy_artifact
+
+      - name: Resolve deploy source
+        shell: bash
+        run: |
+          set -euo pipefail
+          SRC="./deploy_artifact/${ARTIFACT_SUBDIR}"
+          if [[ ! -d "$SRC" ]]; then
+            echo "ERROR: artifact_subdir not found: $SRC"
+            exit 1
+          fi
+          echo "DEPLOY_SRC=$SRC" >> "$GITHUB_ENV"
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.IONOS_SSH_KEY }}
+
+      - name: Add known hosts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.IONOS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Validate staging nginx routing
+        shell: bash
+        env:
+          IONOS_HOST: ${{ secrets.IONOS_HOST }}
+          IONOS_USER: ${{ secrets.IONOS_USER }}
+          DOMAIN: ${{ env.DOMAIN }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          ALLOW_MISSING_NGINX: ${{ env.ALLOW_MISSING_NGINX }}
+        run: |
+          set -euo pipefail
+          ssh "$IONOS_USER@$IONOS_HOST" bash -s -- "$DOMAIN" "$ENVIRONMENT" "$ALLOW_MISSING_NGINX" <<'EOF'
+          set -euo pipefail
+          DOMAIN="$1"
+          ENVIRONMENT="$2"
+          ALLOW_MISSING_NGINX="$3"
+
+          PROD_CONF="/home/proxyuser/NgNix-RP/nginx.conf"
+          STAGING_DIR="/home/proxyuser/nginx-config-staging/conf.d"
+
+          if [[ ! -f "$PROD_CONF" ]]; then
+            echo "ERROR: $PROD_CONF missing on server"
+            exit 1
+          fi
+          if [[ ! -d "$STAGING_DIR" ]]; then
+            echo "ERROR: $STAGING_DIR missing on server"
+            exit 1
+          fi
+
+          STAGING_FILES=$(grep -R -l -F "$DOMAIN" "$STAGING_DIR" 2>/dev/null || true)
+
+          if [[ "$ENVIRONMENT" == "staging" ]]; then
+            if [[ -z "$STAGING_FILES" && "$ALLOW_MISSING_NGINX" != "true" ]]; then
+              echo "ERROR: $DOMAIN not found in staging nginx configs"
+              exit 1
+            fi
+
+            if [[ -n "$STAGING_FILES" ]]; then
+              if grep -n -E "ssl_certificate(_key)?[[:space:]]" $STAGING_FILES >/dev/null; then
+                echo "ERROR: staging config must not terminate SSL"
+                exit 1
+              fi
+              if grep -n -E "listen[[:space:]]+443" $STAGING_FILES >/dev/null; then
+                echo "ERROR: staging config must not listen on 443"
+                exit 1
+              fi
+            fi
+
+            if [[ "$ALLOW_MISSING_NGINX" != "true" ]]; then
+              if ! grep -n -F "server_name" "$PROD_CONF" | grep -F "$DOMAIN" >/dev/null; then
+                echo "ERROR: $DOMAIN not found in production nginx.conf"
+                exit 1
+              fi
+
+              if ! awk -v domain="$DOMAIN" '
+                BEGIN {in_block=0; depth=0; matched=0; proxy=0; found=0}
+                /server[[:space:]]*{/ {in_block=1; depth=1; matched=0; proxy=0}
+                in_block {
+                  if ($0 ~ /server_name/ && $0 ~ domain) {matched=1}
+                  if ($0 ~ /proxy_pass/ && $0 ~ /:8080/) {proxy=1}
+                  depth += gsub(/{/, "{") - gsub(/}/, "}")
+                  if (depth <= 0) {
+                    if (matched && proxy) {found=1}
+                    in_block=0
+                  }
+                }
+                END {exit found ? 0 : 1}
+              ' "$PROD_CONF"; then
+                echo "ERROR: $DOMAIN server block does not proxy_pass to :8080"
+                exit 1
+              fi
+            fi
+          fi
+
+          echo "nginx checks passed for $DOMAIN"
+          EOF
+
+      - name: Ensure deploy directory
+        shell: bash
+        env:
+          IONOS_HOST: ${{ secrets.IONOS_HOST }}
+          IONOS_USER: ${{ secrets.IONOS_USER }}
+        run: |
+          set -euo pipefail
+          ssh "$IONOS_USER@$IONOS_HOST" "mkdir -p '$DEPLOY_DIR'"
+
+      - name: Deploy build
+        shell: bash
+        env:
+          IONOS_HOST: ${{ secrets.IONOS_HOST }}
+          IONOS_USER: ${{ secrets.IONOS_USER }}
+        run: |
+          set -euo pipefail
+          RSYNC_FLAGS="-az"
+          if [[ "$RSYNC_DELETE" == "true" ]]; then
+            RSYNC_FLAGS="$RSYNC_FLAGS --delete"
+          fi
+          rsync $RSYNC_FLAGS "$DEPLOY_SRC"/ "$IONOS_USER@$IONOS_HOST:$DEPLOY_DIR/"
