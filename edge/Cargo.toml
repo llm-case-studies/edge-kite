@@ -52,6 +52,10 @@ anyhow = "1"
 # System info (for resource monitoring)
 sysinfo = "0.31"
 
+# API documentation
+utoipa = { version = "4", features = ["axum_extras"] }
+utoipa-swagger-ui = { version = "7", features = ["axum"] }
+
 [dev-dependencies]
 tokio-test = "0.4"
 tempfile = "3"

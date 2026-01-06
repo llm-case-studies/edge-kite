@@ -1,5 +1,6 @@
 
 import { EdgeEvent, EventCategory } from '../types';
+import { api } from './api';
 
 // Generate a session ID for this specific tab/window
 const SESSION_ID = 'sess_' + Math.random().toString(36).substring(2, 9);
@@ -11,6 +12,8 @@ class TrackerService {
   private channel: BroadcastChannel;
   private listeners: Set<EventHandler>;
   private isTracking: boolean = false;
+  private sendToApi: boolean = false; // Toggle for API integration
+  private apiAvailable: boolean = false;
 
   constructor() {
     this.channel = new BroadcastChannel(CHANNEL_NAME);
@@ -22,6 +25,34 @@ class TrackerService {
         this.notify(msg.data);
       }
     };
+
+    // Check if API is available on init
+    this.checkApiAvailability();
+  }
+
+  // Check if EdgeKite API is running
+  private async checkApiAvailability() {
+    try {
+      this.apiAvailable = await api.isAvailable();
+      if (this.apiAvailable) {
+        console.log('[Tracker] EdgeKite API available');
+      }
+    } catch {
+      this.apiAvailable = false;
+    }
+  }
+
+  // Enable/disable sending to API
+  public setApiMode(enabled: boolean) {
+    this.sendToApi = enabled;
+    if (enabled) {
+      this.checkApiAvailability();
+    }
+  }
+
+  // Check if API is available
+  public isApiAvailable(): boolean {
+    return this.apiAvailable;
   }
 
   // Generate an event object matching our schema
@@ -42,12 +73,17 @@ class TrackerService {
   // Public method to track an event
   public track(category: EventCategory, type: string, detail: string, meta?: Record<string, any>) {
     const event = this.createEvent(category, type, detail, meta);
-    
+
     // 1. Notify local listeners (this tab's widget)
     this.notify(event);
-    
+
     // 2. Broadcast to other tabs
     this.channel.postMessage(event);
+
+    // 3. Send to EdgeKite API (if enabled and available)
+    if (this.sendToApi && this.apiAvailable) {
+      api.queueEvent(event);
+    }
   }
 
   private notify(event: EdgeEvent) {

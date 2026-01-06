@@ -281,6 +281,66 @@ impl Database {
         let count: i64 = conn.query_row("SELECT COUNT(*) FROM events WHERE synced = 0", [], |row| row.get(0))?;
         Ok(count)
     }
+
+    /// Get unique source count
+    pub fn source_count(&self) -> Result<i64> {
+        let conn = self.conn.lock().unwrap();
+        let count: i64 = conn.query_row("SELECT COUNT(DISTINCT source_id) FROM events", [], |row| row.get(0))?;
+        Ok(count)
+    }
+
+    /// Get recent events for dashboard display
+    pub fn get_recent_events(&self, limit: usize, category: Option<&str>, source: Option<&str>) -> Result<Vec<Event>> {
+        let conn = self.conn.lock().unwrap();
+
+        // Simple query - filter in Rust for flexibility
+        let mut stmt = conn.prepare(
+            r#"
+            SELECT event_id, observed_at, received_at,
+                   source_type, source_id, source_seq,
+                   category, type, severity, correlation_id,
+                   payload_json, attachments_json,
+                   pii, retention_class
+            FROM events
+            ORDER BY observed_at DESC
+            LIMIT ?1
+            "#
+        )?;
+
+        let events: Vec<Event> = stmt
+            .query_map([limit * 2], Self::map_event_row)? // Fetch extra for filtering
+            .filter_map(|r| r.ok())
+            .filter_map(|row| row.into_event().ok())
+            .filter(|e| {
+                let cat_match = category.map_or(true, |c| e.event.category == c);
+                let src_match = source.map_or(true, |s| e.source.id == s);
+                cat_match && src_match
+            })
+            .take(limit)
+            .collect();
+
+        Ok(events)
+    }
+
+    // Helper to map a row to EventRow
+    fn map_event_row(row: &rusqlite::Row) -> rusqlite::Result<EventRow> {
+        Ok(EventRow {
+            event_id: row.get(0)?,
+            observed_at: row.get(1)?,
+            received_at: row.get(2)?,
+            source_type: row.get(3)?,
+            source_id: row.get(4)?,
+            source_seq: row.get(5)?,
+            category: row.get(6)?,
+            event_type: row.get(7)?,
+            severity: row.get(8)?,
+            correlation_id: row.get(9)?,
+            payload_json: row.get(10)?,
+            attachments_json: row.get(11)?,
+            pii: row.get(12)?,
+            retention_class: row.get(13)?,
+        })
+    }
 }
 
 /// Internal row representation
