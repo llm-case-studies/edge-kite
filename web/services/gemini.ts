@@ -1,14 +1,29 @@
 
-
 import { GoogleGenAI, Chat, GenerateContentResponse } from "@google/genai";
 import { Theme } from '../types';
 
 class GeminiService {
-  private ai: GoogleGenAI;
+  private ai: GoogleGenAI | null = null;
   private chat: Chat | null = null;
+  private enabled: boolean = false;
 
   constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+    if (apiKey) {
+      try {
+        this.ai = new GoogleGenAI({ apiKey });
+        this.enabled = true;
+        console.log('[Gemini] AI service initialized');
+      } catch (e) {
+        console.warn('[Gemini] Failed to initialize:', e);
+      }
+    } else {
+      console.log('[Gemini] No API key - AI features disabled');
+    }
+  }
+
+  public isEnabled(): boolean {
+    return this.enabled;
   }
 
   private getSystemInstruction(theme: Theme): string {
@@ -41,6 +56,7 @@ class GeminiService {
   }
 
   public initChat(theme: Theme) {
+    if (!this.ai) return;
     this.chat = this.ai.chats.create({
       model: 'gemini-3-flash-preview',
       config: {
@@ -50,13 +66,17 @@ class GeminiService {
   }
 
   public async sendMessage(message: string): Promise<string> {
+    if (!this.enabled || !this.ai) {
+      return "[AI Offline] Set GEMINI_API_KEY in .env.local to enable analysis.";
+    }
+
     if (!this.chat) {
       this.initChat('edge');
     }
 
     try {
       if (!this.chat) throw new Error("Chat not initialized");
-      
+
       const response: GenerateContentResponse = await this.chat.sendMessage({ message });
       return response.text || "Analysis failed.";
     } catch (error) {
@@ -66,15 +86,19 @@ class GeminiService {
   }
 
   public async analyzeLog(sanitizedLog: string): Promise<string> {
+    if (!this.enabled || !this.ai) {
+      return "[AI Offline] Pattern analysis requires GEMINI_API_KEY. Running in offline mode.";
+    }
+
     if (!this.chat) {
       this.initChat('edge');
     }
 
     try {
       if (!this.chat) throw new Error("Chat not initialized");
-      
+
       const prompt = `[SYSTEM ALERT: INCOMING SANITIZED BUNDLE]\n\nLOG DATA:\n${sanitizedLog}\n\nAnalyze priority and recommended action.`;
-      
+
       const response: GenerateContentResponse = await this.chat.sendMessage({ message: prompt });
       return response.text || "Analysis failed.";
     } catch (error) {
