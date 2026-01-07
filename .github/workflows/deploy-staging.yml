@@ -18,6 +18,9 @@ jobs:
 
       - name: Install and Build
         working-directory: web
+        env:
+          UMAMI_WEBSITE_ID: 1efa83d3-780a-483c-a301-84d3c70e992d
+          UMAMI_SCRIPT_URL: https://umami.edge-kite.com/script.js
         run: |
           npm install
           npm run build
